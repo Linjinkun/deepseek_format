@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>表单内容转换</title>
+    <title>deepseek文本格式化</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -104,31 +104,27 @@
     <script>
         function convertText() {
             const input = document.getElementById('inputText').innerHTML;
-            //const output = input.replace(/<span[^>]*>[^<]*[0-9]+[^<]*<\/span>/g, '');
-			const output = input.replace(/<span[^>]*>\d+<\/span>/g, '');
-			console.log(output)
+            const output = input.replace(/<span[^>]*>\d+<\/span>/g, '');
+            console.log(output);
             document.getElementById('outputText').innerHTML = '转换后的文本: ' + output;
         }
 
-        function copyText() {
+        async function copyText() {
             const outputElement = document.getElementById('outputText');
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = outputElement.innerHTML;
-            const textToCopy = tempDiv.textContent.replace('转换后的文本: ', '');
-            const textArea = document.createElement('textarea');
-            textArea.value = textToCopy;
-            document.body.appendChild(textArea);
-            textArea.select();
-            const successful = document.execCommand('copy');
-            document.body.removeChild(textArea);
+            const htmlContent = outputElement.innerHTML.replace('转换后的文本: ', '');
 
-            const messageElement = document.getElementById('copyMessage');
-            if (successful) {
+            try {
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const clipboardItem = new ClipboardItem({ 'text/html': blob });
+                await navigator.clipboard.write([clipboardItem]);
+
+                const messageElement = document.getElementById('copyMessage');
                 messageElement.textContent = '复制成功！';
                 setTimeout(() => {
                     messageElement.textContent = '';
                 }, 2000);
-            } else {
+            } catch (error) {
+                const messageElement = document.getElementById('copyMessage');
                 messageElement.textContent = '复制失败，请重试。';
             }
         }
