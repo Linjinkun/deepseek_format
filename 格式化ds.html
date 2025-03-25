@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>表单内容转换</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        form {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 500px;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        #inputText {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+            min-height: 200px;
+            resize: vertical;
+            white-space: pre-wrap;
+            outline: none;
+        }
+
+        input[type="button"] {
+            background-color: #007BFF;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        input[type="button"]:hover {
+            background-color: #0056b3;
+        }
+
+        #outputText {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 500px;
+            white-space: pre-wrap;
+            margin-bottom: 10px;
+        }
+
+        #copyButton {
+            background-color: #28a745;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #copyButton:hover {
+            background-color: #218838;
+        }
+
+        #copyMessage {
+            color: green;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <form>
+        <label for="inputText">输入文本:</label><br>
+        <div id="inputText" contenteditable="true"></div>
+        <input type="button" value="转换" onclick="convertText()">
+    </form>
+    <div>
+        <p id="outputText"></p>
+        <button id="copyButton" onclick="copyText()">复制</button>
+        <p id="copyMessage"></p>
+    </div>
+
+    <script>
+        function convertText() {
+            const input = document.getElementById('inputText').innerHTML;
+            //const output = input.replace(/<span[^>]*>[^<]*[0-9]+[^<]*<\/span>/g, '');
+			const output = input.replace(/<span[^>]*>\d+<\/span>/g, '');
+			console.log(output)
+            document.getElementById('outputText').innerHTML = '转换后的文本: ' + output;
+        }
+
+        function copyText() {
+            const outputElement = document.getElementById('outputText');
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = outputElement.innerHTML;
+            const textToCopy = tempDiv.textContent.replace('转换后的文本: ', '');
+            const textArea = document.createElement('textarea');
+            textArea.value = textToCopy;
+            document.body.appendChild(textArea);
+            textArea.select();
+            const successful = document.execCommand('copy');
+            document.body.removeChild(textArea);
+
+            const messageElement = document.getElementById('copyMessage');
+            if (successful) {
+                messageElement.textContent = '复制成功！';
+                setTimeout(() => {
+                    messageElement.textContent = '';
+                }, 2000);
+            } else {
+                messageElement.textContent = '复制失败，请重试。';
+            }
+        }
+    </script>
+</body>
+
+</html>    
