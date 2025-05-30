@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP地址修复工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#10B981',
+                        danger: '#EF4444',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .transition-all-300 {
+                transition: all 0.3s ease;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-inter">
+    <div class="max-w-4xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
+        <!-- 页面标题 -->
+        <div class="text-center mb-10">
+            <h1 class="text-[clamp(2rem,5vw,3rem)] font-bold text-gray-800 mb-3 text-shadow">
+                <i class="fa fa-wrench text-primary mr-2"></i>IP地址修复工具
+            </h1>
+            <p class="text-gray-600 text-lg max-w-2xl mx-auto">
+                快速修复IP地址中的重复点，将 127.0.0..1 转换为 '127.0.0.1'
+            </p>
+        </div>
+
+        <!-- 主要内容区域 -->
+        <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8 mb-8 transform hover:shadow-xl transition-all-300">
+            <div class="mb-6">
+                <label for="ipTextarea" class="block text-sm font-medium text-gray-700 mb-2">
+                    输入需要修复的IP地址（每行一个）
+                </label>
+                <div class="relative">
+                    <textarea 
+                        id="ipTextarea" 
+                        class="block w-full p-4 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all-300 resize-none" 
+                        rows="5" 
+                        placeholder="请输入IP地址，例如：
+127.0.0..1
+192.168...1.1
+255.255.255.0"></textarea>
+                    <div class="absolute top-3 right-3 text-gray-400 text-sm">
+                        <span id="charCount">0</span> 字符
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 mb-6">
+                <button 
+                    id="convertBtn" 
+                    class="bg-primary hover:bg-primary/90 text-white font-medium py-3 px-6 rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all-300 flex-1 flex items-center justify-center"
+                >
+                    <i class="fa fa-exchange mr-2"></i> 转换IP地址
+                </button>
+                <button 
+                    id="clearBtn" 
+                    class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-3 px-6 rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all-300 flex-1 flex items-center justify-center"
+                >
+                    <i class="fa fa-eraser mr-2"></i> 清空
+                </button>
+            </div>
+
+            <div class="mb-4">
+                <div class="flex items-center mb-2">
+                    <label class="inline-flex items-center mr-4">
+                        <input type="radio" name="formatType" value="single" class="form-radio text-primary" checked>
+                        <span class="ml-2 text-sm text-gray-700">单引号格式 ('1.1.1.1')</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="formatType" value="double" class="form-radio text-primary">
+                        <span class="ml-2 text-sm text-gray-700">双引号格式 ("1.1.1.1")</span>
+                    </label>
+                </div>
+                <div class="flex items-center">
+                    <label class="inline-flex items-center mr-4">
+                        <input type="checkbox" id="addComma" class="form-checkbox text-primary" checked>
+                        <span class="ml-2 text-sm text-gray-700">每行末尾添加逗号</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" id="trimEmpty" class="form-checkbox text-primary" checked>
+                        <span class="ml-2 text-sm text-gray-700">移除空行</span>
+                    </label>
+                </div>
+            </div>
+
+            <div>
+                <label for="resultTextarea" class="block text-sm font-medium text-gray-700 mb-2">
+                    修复结果
+                </label>
+                <div class="relative">
+                    <textarea 
+                        id="resultTextarea" 
+                        class="block w-full p-4 border border-gray-300 rounded-lg shadow-sm bg-gray-50 focus:ring-2 focus:ring-secondary/50 focus:border-secondary transition-all-300 resize-none" 
+                        rows="5" 
+                        placeholder="修复后的IP地址将显示在这里..."
+                        readonly></textarea>
+                    <button 
+                        id="copyBtn" 
+                        class="absolute top-3 right-3 bg-white hover:bg-gray-100 text-gray-700 px-3 py-1 rounded-md text-sm border border-gray-300 shadow-sm transition-all-300"
+                    >
+                        <i class="fa fa-copy mr-1"></i> 复制
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 转换历史记录 -->
+        <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8 transform hover:shadow-xl transition-all-300">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fa fa-history text-primary mr-2"></i> 转换历史
+            </h2>
+            <div id="historyList" class="space-y-3 max-h-60 overflow-y-auto pr-2">
+                <div class="text-gray-500 italic text-center py-4">暂无历史记录</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="mb-2">IP地址修复工具 &copy; 2025</p>
+            <p class="text-gray-400 text-sm">快速、简单地修复IP地址中的格式问题</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const ipTextarea = document.getElementById('ipTextarea');
+            const resultTextarea = document.getElementById('resultTextarea');
+            const convertBtn = document.getElementById('convertBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            const charCount = document.getElementById('charCount');
+            const historyList = document.getElementById('historyList');
+            const formatTypeRadios = document.querySelectorAll('input[name="formatType"]');
+            const addCommaCheckbox = document.getElementById('addComma');
+            const trimEmptyCheckbox = document.getElementById('trimEmpty');
+
+            // 监听输入字符计数
+            ipTextarea.addEventListener('input', function() {
+                charCount.textContent = this.value.length;
+            });
+
+            // 转换IP地址
+            convertBtn.addEventListener('click', function() {
+                const input = ipTextarea.value.trim();
+                if (!input) {
+                    showNotification('请输入IP地址', 'error');
+                    return;
+                }
+
+                const formatType = document.querySelector('input[name="formatType"]:checked').value;
+                const addComma = addCommaCheckbox.checked;
+                const trimEmpty = trimEmptyCheckbox.checked;
+                
+                const result = processIpAddresses(input, formatType, addComma, trimEmpty);
+                resultTextarea.value = result;
+                
+                // 添加到历史记录
+                addToHistory(input, result);
+                
+                // 显示成功通知
+                showNotification('IP地址转换成功', 'success');
+            });
+
+            // 清空按钮
+            clearBtn.addEventListener('click', function() {
+                ipTextarea.value = '';
+                resultTextarea.value = '';
+                charCount.textContent = '0';
+                showNotification('已清空所有内容', 'info');
+            });
+
+            // 复制结果
+            copyBtn.addEventListener('click', function() {
+                if (resultTextarea.value) {
+                    resultTextarea.select();
+                    document.execCommand('copy');
+                    showNotification('已复制到剪贴板', 'success');
+                    
+                    // 复制按钮效果
+                    const originalText = copyBtn.innerHTML;
+                    copyBtn.innerHTML = '<i class="fa fa-check mr-1"></i> 已复制';
+                    copyBtn.classList.add('bg-green-100', 'text-green-700', 'border-green-300');
+                    
+                    setTimeout(() => {
+                        copyBtn.innerHTML = originalText;
+                        copyBtn.classList.remove('bg-green-100', 'text-green-700', 'border-green-300');
+                    }, 2000);
+                }
+            });
+
+            // 处理IP地址
+            function processIpAddresses(input, formatType, addComma, trimEmpty) {
+                const lines = input.split('\n');
+                let processedLines = [];
+                
+                for (let line of lines) {
+                    line = line.trim();
+                    
+                    // 跳过空行（如果选项启用）
+                    if (trimEmpty && line === '') {
+                        continue;
+                    }
+                    
+                    // 修复IP地址中的重复点
+                    let fixedIp = line.replace(/\.{2,}/g, '.');
+                    fixedIp = fixedIp.replace(/^\.|\.$/g, '');
+                    
+                    // 添加引号
+                    const quote = formatType === 'single' ? "'" : '"';
+                    let formattedLine = `${quote}${fixedIp}${quote}`;
+                    
+                    // 添加逗号
+                    if (addComma && fixedIp) {
+                        formattedLine += ',';
+                    }
+                    
+                    processedLines.push(formattedLine);
+                }
+                
+                return processedLines.join('\n');
+            }
+
+            // 添加到历史记录
+            function addToHistory(input, result) {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString();
+                
+                const historyItem = document.createElement('div');
+                historyItem.className = 'p-3 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-all-300';
+                
+                // 缩短显示的内容
+                const shortInput = input.length > 50 ? input.substring(0, 50) + '...' : input;
+                const shortResult = result.length > 50 ? result.substring(0, 50) + '...' : result;
+                
+                historyItem.innerHTML = `
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="text-sm font-medium text-gray-800">${timeString}</span>
+                        <span class="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full">
+                            <i class="fa fa-check-circle mr-0.5"></i> 已处理
+                        </span>
+                    </div>
+                    <div class="mb-1">
+                        <span class="text-xs text-gray-500">原始:</span>
+                        <span class="text-sm text-gray-700 break-all">${shortInput}</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-gray-500">处理后:</span>
+                        <span class="text-sm text-gray-900 break-all font-medium">${shortResult}</span>
+                    </div>
+                    <button class="mt-2 text-xs text-primary hover:text-primary/80 transition-colors">
+                        <i class="fa fa-expand mr-0.5"></i> 查看完整内容
+                    </button>
+                `;
+                
+                // 如果是第一条记录，清空"暂无历史记录"
+                if (historyList.querySelector('.italic')) {
+                    historyList.innerHTML = '';
+                }
+                
+                // 添加到顶部
+                historyList.insertBefore(historyItem, historyList.firstChild);
+                
+                // 查看完整内容按钮
+                const viewFullBtn = historyItem.querySelector('button');
+                viewFullBtn.addEventListener('click', function() {
+                    showFullHistoryModal(input, result);
+                });
+                
+                // 限制历史记录数量
+                const maxHistoryItems = 10;
+                if (historyList.children.length > maxHistoryItems) {
+                    historyList.removeChild(historyList.lastChild);
+                }
+            }
+
+            // 显示完整历史记录模态框
+            function showFullHistoryModal(input, result) {
+                // 创建模态框
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 z-50 overflow-y-auto';
+                modal.innerHTML = `
+                    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                        <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+                            <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+                        </div>
+                        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                                <div class="sm:flex sm:items-start">
+                                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4 flex items-center">
+                                            <i class="fa fa-history text-primary mr-2"></i> 完整历史记录
+                                        </h3>
+                                        <div class="mb-4">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">原始输入</label>
+                                            <div class="bg-gray-50 border border-gray-200 rounded-md p-3 h-40 overflow-auto text-sm">
+                                                ${escapeHtml(input)}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">处理结果</label>
+                                            <div class="bg-gray-50 border border-gray-200 rounded-md p-3 h-40 overflow-auto text-sm">
+                                                ${escapeHtml(result)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                                <button type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:ml-3 sm:w-auto sm:text-sm">
+                                    关闭
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // 添加到页面
+                document.body.appendChild(modal);
+                
+                // 关闭按钮
+                const closeBtn = modal.querySelector('button');
+                closeBtn.addEventListener('click', function() {
+                    document.body.removeChild(modal);
+                });
+                
+                // 点击背景关闭
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        document.body.removeChild(modal);
+                    }
+                });
+            }
+
+            // 转义HTML
+            function escapeHtml(text) {
+                return text
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
+            // 显示通知
+            function showNotification(message, type = 'info') {
+                // 创建通知元素
+                const notification = document.createElement('div');
+                
+                // 设置样式
+                let bgColor, textColor, icon;
+                switch(type) {
+                    case 'success':
+                        bgColor = 'bg-green-50';
+                        textColor = 'text-green-800';
+                        icon = 'fa-check-circle';
+                        break;
+                    case 'error':
+                        bgColor = 'bg-red-50';
+                        textColor = 'text-red-800';
+                        icon = 'fa-exclamation-circle';
+                        break;
+                    case 'info':
+                    default:
+                        bgColor = 'bg-blue-50';
+                        textColor = 'text-blue-800';
+                        icon = 'fa-info-circle';
+                        break;
+                }
+                
+                notification.className = `${bgColor} ${textColor} border-l-4 border-green-400 p-4 rounded shadow-lg fixed top-4 right-4 transform transition-all duration-300 ease-in-out translate-x-full opacity-0 z-50`;
+                notification.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fa ${icon} text-lg"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium">${message}</p>
+                        </div>
+                        <button class="ml-auto focus:outline-none">
+                            <i class="fa fa-times text-gray-400 hover:text-gray-600"></i>
+                        </button>
+                    </div>
+                `;
+                
+                // 添加到页面
+                document.body.appendChild(notification);
+                
+                // 显示动画
+                setTimeout(() => {
+                    notification.classList.remove('translate-x-full', 'opacity-0');
+                }, 10);
+                
+                // 关闭按钮
+                const closeBtn = notification.querySelector('button');
+                closeBtn.addEventListener('click', function() {
+                    notification.classList.add('translate-x-full', 'opacity-0');
+                    setTimeout(() => {
+                        document.body.removeChild(notification);
+                    }, 300);
+                });
+                
+                // 自动关闭
+                setTimeout(() => {
+                    notification.classList.add('translate-x-full', 'opacity-0');
+                    setTimeout(() => {
+                        document.body.removeChild(notification);
+                    }, 300);
+                }, 3000);
+            }
+        });
+    </script>
+</body>
+</html>
+    
